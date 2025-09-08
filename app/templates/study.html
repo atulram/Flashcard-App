@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Flashcards - {{ filename }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/png" href="/static/favicon.svg">
+</head>
+<body class="study-page">
+    <div class="study-container">
+        <header class="study-header">
+            <div class="header-content">
+                <h1>📚 Study Session</h1>
+                <div class="file-info">
+                    <span class="file-name">{{ filename }}</span>
+                    <span class="card-count">{{ total_cards }} cards</span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+                <span class="progress-text" id="progressText">1 / {{ total_cards }}</span>
+            </div>
+        </header>
+
+        <main class="study-main">
+            <div class="card-container">
+                <div class="flashcard" id="flashcard" onclick="flipCard()">
+                    <div class="card-inner" id="cardInner">
+                        <div class="card-front">
+                            <div class="card-header">
+                                <span class="card-type">Question</span>
+                                <span class="flip-hint">Click to reveal answer</span>
+                            </div>
+                            <div class="card-content" id="questionContent">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="card-back">
+                            <div class="card-header">
+                                <span class="card-type">Answer</span>
+                                <span class="flip-hint">Click to see question</span>
+                            </div>
+                            <div class="card-content" id="answerContent">
+                                Loading...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" id="prevBtn" onclick="previousCard()" disabled>
+                    ← Previous
+                </button>
+                
+                <div class="center-controls">
+                    <button class="control-btn flip-btn" onclick="flipCard()">
+                        🔄 Flip Card
+                    </button>
+                    <div class="keyboard-hint">
+                        Press SPACE to flip, ← → to navigate
+                    </div>
+                </div>
+                
+                <button class="control-btn" id="nextBtn" onclick="nextCard()">
+                    Next →
+                </button>
+            </div>
+        </main>
+
+        <div class="completion-screen" id="completionScreen" style="display: none;">
+            <div class="completion-content">
+                <div class="completion-icon">🎉</div>
+                <h2>Great job!</h2>
+                <p>You've completed all {{ total_cards }} flashcards.</p>
+                <div class="completion-stats">
+                    <div class="stat">
+                        <span class="stat-number">{{ total_cards }}</span>
+                        <span class="stat-label">Cards studied</span>
+                    </div>
+                </div>
+                <div class="completion-actions">
+                    <button class="control-btn primary" onclick="restartStudy()">
+                        🔄 Study Again
+                    </button>
+                    <button class="control-btn" onclick="goHome()">
+                        📤 Upload New PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>All Cards</h3>
+                <button class="close-sidebar" onclick="toggleSidebar()">×</button>
+            </div>
+            <div class="cards-list" id="cardsList">
+                <!-- Cards list will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+            📋
+        </button>
+    </div>
+
+    <script src="/static/js/flashcards.js"></script>
+    <script>
+        // Initialize flashcards with data from template
+        const flashcardsData = {{ flashcards | tojson | safe }};
+        const totalCards = {{ total_cards }};
+        
+        // Initialize the study session
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeStudySession(flashcardsData, totalCards);
+        });
+
+        function goHome() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

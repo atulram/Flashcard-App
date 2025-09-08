@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Flashcard Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/png" href="/static/favicon.svg">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📚 PDF Flashcard Generator</h1>
+            <p class="subtitle">Transform your PDFs into interactive study flashcards using AI</p>
+        </header>
+
+        <main class="main-content">
+            <div class="upload-section">
+                <form id="uploadForm" enctype="multipart/form-data" action="/upload" method="post">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <div class="upload-icon">📄</div>
+                            <h3>Drop your PDF here or click to browse</h3>
+                            <p class="upload-description">
+                                Maximum 5 pages • Text-based PDFs only • Up to 10MB
+                            </p>
+                            <input type="file" id="fileInput" name="file" accept=".pdf" required>
+                            <button type="button" class="browse-button" onclick="document.getElementById('fileInput').click()">
+                                Choose PDF File
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-info" id="fileInfo" style="display: none;">
+                        <div class="selected-file">
+                            <span class="file-icon">📄</span>
+                            <span class="file-name" id="fileName"></span>
+                            <span class="file-size" id="fileSize"></span>
+                            <button type="button" class="remove-file" onclick="clearFile()">×</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="generate-button" id="generateButton" disabled>
+                        Generate Flashcards
+                    </button>
+                </form>
+
+                <div class="loading-section" id="loadingSection" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <h3>Processing your PDF...</h3>
+                    <p>Extracting text and generating flashcards. This may take a moment.</p>
+                    <div class="progress-steps">
+                        <div class="step active" id="step1">📄 Reading PDF</div>
+                        <div class="step" id="step2">🧠 Analyzing content</div>
+                        <div class="step" id="step3">🎯 Creating flashcards</div>
+                    </div>
+                </div>
+
+                <div class="error-section" id="errorSection" style="display: none;">
+                    <div class="error-content">
+                        <div class="error-icon">⚠️</div>
+                        <h3>Oops! Something went wrong</h3>
+                        <p class="error-message" id="errorMessage"></p>
+                        <button type="button" class="retry-button" onclick="resetForm()">Try Again</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2>How it works</h2>
+                <div class="features-grid">
+                    <div class="feature">
+                        <div class="feature-icon">📤</div>
+                        <h3>Upload PDF</h3>
+                        <p>Upload any text-based PDF document up to 5 pages</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🤖</div>
+                        <h3>AI Analysis</h3>
+                        <p>Our AI analyzes the content and identifies key concepts</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Study Cards</h3>
+                        <p>Get interactive flashcards optimized for effective learning</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const generateButton = document.getElementById('generateButton');
+        const uploadForm = document.getElementById('uploadForm');
+        const loadingSection = document.getElementById('loadingSection');
+        const errorSection = document.getElementById('errorSection');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelection(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelection(file) {
+            // Validate file type
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                showError('Please select a PDF file.');
+                return;
+            }
+
+            // Validate file size (10MB)
+            const maxSize = 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showError('File size must be less than 10MB.');
+                return;
+            }
+
+            // Update UI
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            
+            uploadArea.style.display = 'none';
+            fileInfo.style.display = 'block';
+            generateButton.disabled = false;
+            
+            hideError();
+        }
+
+        function clearFile() {
+            fileInput.value = '';
+            uploadArea.style.display = 'block';
+            fileInfo.style.display = 'none';
+            generateButton.disabled = true;
+            hideError();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // Form submission
+        uploadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            if (!fileInput.files.length) {
+                showError('Please select a PDF file.');
+                return;
+            }
+
+            showLoading();
+            
+            // Submit the form
+            const formData = new FormData(uploadForm);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.detail || 'Upload failed');
+                    });
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showError(error.message);
+            });
+        });
+
+        function showLoading() {
+            uploadForm.style.display = 'none';
+            errorSection.style.display = 'none';
+            loadingSection.style.display = 'block';
+            
+            // Animate progress steps
+            setTimeout(() => {
+                document.getElementById('step2').classList.add('active');
+            }, 2000);
+            
+            setTimeout(() => {
+                document.getElementById('step3').classList.add('active');
+            }, 4000);
+        }
+
+        function hideLoading() {
+            loadingSection.style.display = 'none';
+            uploadForm.style.display = 'block';
+            
+            // Reset progress steps
+            document.querySelectorAll('.step').forEach((step, index) => {
+                if (index === 0) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            errorSection.style.display = 'block';
+            hideLoading();
+        }
+
+        function hideError() {
+            errorSection.style.display = 'none';
+        }
+
+        function resetForm() {
+            hideError();
+            clearFile();
+        }
+    </script>
+</body>
+</html>
