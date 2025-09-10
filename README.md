@@ -243,6 +243,6 @@ If you encounter issues:
 3. Open an issue with error details
 4. Include PDF characteristics and error messages
 
----
+**[🎪 Demo Video](https://youtu.be/nHUIKiLdYmA)**
 
 **Happy Learning! 📚✨**
